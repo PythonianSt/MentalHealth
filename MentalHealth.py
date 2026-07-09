@@ -274,7 +274,7 @@ phq2 = st.radio("2. รู้สึกเศร้า หดหู่ หรื�
 phq2_score = score_options[phq1] + score_options[phq2]
 phq_status = phq_color(phq2_score)
 
-st.markdown(f"### PHQ-2 = {phq2_score} — {color_label(phq_status)}")
+st.caption("บันทึกคำตอบส่วนนี้แล้ว")
 
 phq9_score = None
 suicide_risk = False
@@ -301,7 +301,7 @@ if phq2_score >= 3:
     phq9_score = phq2_score + sum(phq_extra_scores)
     phq_status = phq_color(phq9_score)
 
-    st.markdown(f"### PHQ-9 = {phq9_score} — {color_label(phq_status)}")
+    st.caption("บันทึกคำตอบส่วนนี้แล้ว")
 
     if phq9_score >= 10 or phq_extra_scores[-1] > 0:
         st.subheader("คำถามเพิ่มเติมด้านความปลอดภัย")
@@ -322,9 +322,9 @@ if phq2_score >= 3:
         suicide_risk = any(x == "ใช่" for x in [s1, s2, s3, s4])
 
         if suicide_risk:
-            st.error("🔴 กรุณาแจ้งเจ้าหน้าที่สถานพยาบาลทันที ไม่ควรอยู่คนเดียว")
+            st.error("เพื่อความปลอดภัย กรุณาแจ้งเจ้าหน้าที่สถานพยาบาลทันที ไม่ควรอยู่คนเดียว")
         else:
-            st.warning("🟡 ควรติดตามและพูดคุยกับเจ้าหน้าที่เมื่อสะดวก")
+            st.info("ขอบคุณที่ตอบคำถามส่วนนี้ เจ้าหน้าที่สุขภาพอาจพูดคุยเพิ่มเติมอย่างเป็นส่วนตัวหากจำเป็น")
 
 
 # -----------------------------
@@ -338,7 +338,7 @@ gad2 = st.radio("2. ไม่สามารถหยุดหรือควบ
 gad2_score = score_options[gad1] + score_options[gad2]
 gad_status = gad_color(gad2_score)
 
-st.markdown(f"### GAD-2 = {gad2_score} — {color_label(gad_status)}")
+st.caption("บันทึกคำตอบส่วนนี้แล้ว")
 
 gad7_score = None
 
@@ -361,7 +361,7 @@ if gad2_score >= 3:
     gad7_score = gad2_score + sum(gad_extra_scores)
     gad_status = gad_color(gad7_score)
 
-    st.markdown(f"### GAD-7 = {gad7_score} — {color_label(gad_status)}")
+    st.caption("บันทึกคำตอบส่วนนี้แล้ว")
 
 
 # -----------------------------
@@ -372,7 +372,7 @@ st.caption("หัวข้อนี้ช่วยให้สถานพย�
 
 sleep_hours = st.slider("ชั่วโมงการนอนต่อคืน", 0.0, 14.0, 7.0, 0.5)
 sleep_status = sleep_color(sleep_hours)
-st.markdown(f"Sleep: {sleep_hours} ชม. — {color_label(sleep_status)}")
+st.caption(f"บันทึกชั่วโมงการนอน: {sleep_hours} ชม.")
 
 loneliness = st.slider("ความโดดเดี่ยว 1=น้อยที่สุด, 5=มากที่สุด", 1, 5, 3)
 exercise = st.slider("การออกกำลังกาย 1=น้อยที่สุด, 5=มากที่สุด", 1, 5, 3)
@@ -388,12 +388,7 @@ family_status = likert_risk_color(family)
 sexual_status = likert_risk_color(sexual)
 financial_status = likert_risk_color(financial)
 
-st.write("ความโดดเดี่ยว:", color_label(loneliness_status))
-st.write("การออกกำลังกาย:", color_label(exercise_status))
-st.write("ภาระการเรียน:", color_label(academic_status))
-st.write("ปัญหาครอบครัว:", color_label(family_status))
-st.write("ปัญหาเพศสัมพันธ์:", color_label(seual_status) if False else color_label(sexual_status))
-st.write("ปัญหาการเงิน:", color_label(financial_status))
+st.caption("บันทึกคำตอบปัจจัยชีวิตและสังคมแล้ว")
 
 
 # -----------------------------
@@ -422,7 +417,7 @@ else:
     any_substance = smoking or alcohol or cannabis or stimulant
     substance_status = substance_color(any_substance)
 
-st.markdown(f"Substance risk — {color_label(substance_status)}")
+st.caption("บันทึกคำตอบหัวข้อนี้แล้ว")
 
 
 # -----------------------------
@@ -518,8 +513,9 @@ summary = {
     "overall_mental_health_status": overall_status,
 }
 
-st.dataframe(pd.DataFrame([summary]))
-st.markdown(f"## Overall: {color_label(overall_status)}")
+# Do not show backend risk colors or raw scores to students.
+# They are saved in GitHub CSV for clinician review and verification.
+st.success("ตอบแบบคัดกรองครบแล้ว กรุณาตรวจทานว่ายืนยันส่งข้อมูลได้")
 
 st.info(
     "หากผลคัดกรองมีความเสี่ยง เจ้าหน้าที่สุขภาพจะพูดคุยเพิ่มเติมเป็นการส่วนตัวเพื่อยืนยันข้อมูล "
@@ -538,3 +534,4 @@ if st.button("Save ลง GitHub CSV"):
         st.success("บันทึกแบบคัดกรองสุขภาพใจลง GitHub CSV แล้ว")
     except Exception as e:
         st.error(f"บันทึก GitHub ไม่สำเร็จ: {e}")
+
