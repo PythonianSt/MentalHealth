@@ -17,6 +17,9 @@ GITHUB_BRANCH = st.secrets.get("GITHUB_BRANCH", "main")
 GITHUB_FILE = st.secrets.get("GITHUB_FILE", "student_registry_log.csv")
 
 
+# -----------------------------
+# Utility functions
+# -----------------------------
 def bkk_now():
     return datetime.now(ZoneInfo("Asia/Bangkok")).strftime("%Y-%m-%d %H:%M:%S")
 
@@ -145,6 +148,11 @@ def append_to_github(row):
     github_save_csv(new_df)
 
 
+def safe_join(items):
+    items = [x for x in items if x]
+    return "; ".join(items) if items else ""
+
+
 score_options = {
     "ไม่เลย": 0,
     "หลายวัน": 1,
@@ -153,16 +161,80 @@ score_options = {
 }
 
 
-st.title("🧠 แบบประเมินสุขภาพจิตนักศึกษา")
-st.warning(
-    "แบบประเมินนี้เป็นการคัดกรองเบื้องต้น ไม่ใช่การวินิจฉัยโรค "
-    "หากมีความคิดทำร้ายตนเองหรือไม่ปลอดภัย กรุณาแจ้งเจ้าหน้าที่สถานพยาบาลทันที"
+# -----------------------------
+# Page introduction: Trust by Design
+# -----------------------------
+st.title("🧠 แบบคัดกรองสุขภาพใจนักศึกษา")
+
+st.success(
+    "ยินดีต้อนรับ แบบคัดกรองนี้ออกแบบมาเพื่อช่วยให้สถานพยาบาลเข้าใจสุขภาพของนักศึกษา "
+    "และดูแลได้เหมาะสมยิ่งขึ้น ไม่มีคำตอบที่ถูกหรือผิด"
 )
 
+st.info(
+    "🔒 ข้อมูลนี้เป็นข้อมูลสุขภาพ ใช้เพื่อการคัดกรองและการดูแลเท่านั้น "
+    "ไม่ส่งข้อมูลรายบุคคลให้คณะ อาจารย์ หรือผู้ฝึกสอน และไม่มีผลต่อผลการเรียนหรือสถานภาพนักศึกษา "
+    "เว้นแต่มีความเสี่ยงเร่งด่วนต่อชีวิตหรือความปลอดภัย ซึ่งจะเปิดเผยเท่าที่จำเป็นเพื่อช่วยเหลือ"
+)
+
+st.warning(
+    "แบบประเมินนี้เป็นการคัดกรองเบื้องต้น ไม่ใช่การวินิจฉัยโรค "
+    "หากมีความคิดทำร้ายตนเองหรือรู้สึกไม่ปลอดภัย กรุณาแจ้งเจ้าหน้าที่สถานพยาบาลทันที"
+)
+
+with st.expander("อ่านก่อนทำแบบคัดกรอง: ความลับและการดูแล", expanded=False):
+    st.markdown(
+        """
+        - แบบคัดกรองนี้ช่วยให้สถานพยาบาลรู้ว่าควรดูแลหรือติดตามนักศึกษาอย่างไร
+        - ผลที่ได้เป็นเพียงสัญญาณคัดกรอง ไม่ใช่การติดป้ายหรือวินิจฉัยโรค
+        - หากพบความเสี่ยง เจ้าหน้าที่สุขภาพจะพูดคุยเป็นการส่วนตัวเพื่อยืนยันข้อมูลและเข้าใจบริบทก่อน
+        - หากไม่สะดวกตอบบางข้อ สามารถเลือก “ไม่ประสงค์ตอบ” ในหัวข้อที่มีตัวเลือกนี้ได้
+        """
+    )
+
+
+# -----------------------------
+# Accessibility Profile
+# -----------------------------
+st.header("0) การเข้าถึงและความสะดวกในการใช้ระบบ")
+st.caption("หัวข้อนี้ช่วยให้เราปรับวิธีให้บริการ ไม่ใช่การประเมินความสามารถของนักศึกษา")
+
+needs_assistance = st.checkbox("ต้องการให้เจ้าหน้าที่ช่วยกรอกข้อมูล")
+large_text = st.checkbox("ต้องการตัวอักษรใหญ่หรืออ่านคำถามช้า ๆ")
+communication_text = st.checkbox("ต้องการสื่อสารด้วยการอ่านข้อความ/พิมพ์ มากกว่าการพูด")
+sign_language = st.checkbox("ใช้ภาษามือ หรือต้องการผู้ช่วยสื่อสาร")
+upper_limb_difference = st.checkbox("มีความแตกต่างของแขน/มือ หรือใช้หน้าจอสัมผัสลำบาก")
+mobility_support = st.checkbox("ใช้อุปกรณ์ช่วยเคลื่อนไหว หรือต้องการความช่วยเหลือในการเคลื่อนย้าย")
+other_accessibility = st.text_input("ความต้องการอื่น ๆ เพื่อให้ใช้ระบบได้สะดวกขึ้น", placeholder="เช่น ขอให้เพื่อนช่วยอ่านคำถาม")
+
+accessibility_notes = []
+if needs_assistance:
+    accessibility_notes.append("staff_assisted")
+if large_text:
+    accessibility_notes.append("large_text_or_slow_reading")
+if communication_text:
+    accessibility_notes.append("text_based_communication")
+if sign_language:
+    accessibility_notes.append("sign_language_or_communication_support")
+if upper_limb_difference:
+    accessibility_notes.append("upper_limb_difference_or_touch_difficulty")
+if mobility_support:
+    accessibility_notes.append("mobility_support")
+if other_accessibility:
+    accessibility_notes.append(f"other: {other_accessibility.strip()}")
+
+if accessibility_notes:
+    st.info("รับทราบครับ/ค่ะ ระบบจะบันทึกความต้องการนี้เพื่อให้เจ้าหน้าที่ช่วยดูแลอย่างเหมาะสม")
+
+
+# -----------------------------
+# Student ID
+# -----------------------------
 if "student_ID" not in st.session_state:
     st.session_state["student_ID"] = ""
 
-st.header("1) Scan QR Code ของนักศึกษา")
+st.header("1) ยืนยันตัวตนนักศึกษา")
+st.caption("หากสแกน QR ไม่สะดวก สามารถกรอก Student ID หรือให้เจ้าหน้าที่ช่วยได้")
 
 qr_img = st.camera_input("เปิดกล้องมือถือเพื่อถ่าย QR Code ของตนเอง")
 
@@ -172,10 +244,10 @@ if qr_img:
         st.session_state["student_ID"] = extract_student_id(qr_text)
         st.success(f"อ่าน QR สำเร็จ: {st.session_state['student_ID']}")
     else:
-        st.error("ยังอ่าน QR ไม่ได้ กรุณาถ่ายใหม่ให้ QR ชัดเจน")
+        st.error("ยังอ่าน QR ไม่ได้ กรุณาถ่ายใหม่ให้ QR ชัดเจน หรือกรอก Student ID แทน")
 
 manual_student_id = st.text_input(
-    "หรือกรอก student_ID แทน",
+    "หรือกรอก Student ID แทน",
     value=st.session_state["student_ID"]
 )
 
@@ -183,13 +255,18 @@ if manual_student_id:
     st.session_state["student_ID"] = manual_student_id.strip()
 
 if not st.session_state["student_ID"]:
+    st.info("กรุณาสแกน QR หรือกรอก Student ID ก่อนเริ่มแบบคัดกรอง")
     st.stop()
 
 student_id = st.session_state["student_ID"]
 st.info(f"Student ID: {student_id}")
 
 
-st.header("2) PHQ-2")
+# -----------------------------
+# PHQ-2 / PHQ-9
+# -----------------------------
+st.header("2) อารมณ์และความสนใจในช่วง 2 สัปดาห์ที่ผ่านมา")
+st.caption("ตอบตามความรู้สึกจริงของตนเอง ไม่มีคำตอบถูกหรือผิด")
 
 phq1 = st.radio("1. เบื่อ ไม่สนใจ หรือไม่เพลิดเพลินกับสิ่งต่าง ๆ", list(score_options.keys()))
 phq2 = st.radio("2. รู้สึกเศร้า หดหู่ หรือสิ้นหวัง", list(score_options.keys()))
@@ -227,7 +304,8 @@ if phq2_score >= 3:
     st.markdown(f"### PHQ-9 = {phq9_score} — {color_label(phq_status)}")
 
     if phq9_score >= 10 or phq_extra_scores[-1] > 0:
-        st.subheader("Suicide Screening")
+        st.subheader("คำถามเพิ่มเติมด้านความปลอดภัย")
+        st.info("คำถามนี้มีไว้เพื่อช่วยเหลืออย่างทันท่วงที ไม่ใช่การตำหนิหรือตัดสิน")
 
         s1 = st.radio("ช่วงนี้เคยรู้สึกว่าชีวิตไม่มีค่า หรือไม่อยากมีชีวิตอยู่หรือไม่", ["ไม่ใช่", "ใช่"])
         s2 = st.radio("เคยคิดทำร้ายตนเองหรือไม่", ["ไม่ใช่", "ใช่"])
@@ -249,7 +327,10 @@ if phq2_score >= 3:
             st.warning("🟡 ควรติดตามและพูดคุยกับเจ้าหน้าที่เมื่อสะดวก")
 
 
-st.header("3) GAD-2")
+# -----------------------------
+# GAD-2 / GAD-7
+# -----------------------------
+st.header("3) ความกังวลในช่วง 2 สัปดาห์ที่ผ่านมา")
 
 gad1 = st.radio("1. รู้สึกกังวล ตื่นเต้น หรือกระวนกระวาย", list(score_options.keys()))
 gad2 = st.radio("2. ไม่สามารถหยุดหรือควบคุมความกังวลได้", list(score_options.keys()))
@@ -283,7 +364,11 @@ if gad2_score >= 3:
     st.markdown(f"### GAD-7 = {gad7_score} — {color_label(gad_status)}")
 
 
+# -----------------------------
+# Life and social factors
+# -----------------------------
 st.header("4) ปัจจัยชีวิตและสังคม")
+st.caption("หัวข้อนี้ช่วยให้สถานพยาบาลเห็นบริบทของชีวิตนักศึกษา เพื่อวางแผนช่วยเหลืออย่างเหมาะสม")
 
 sleep_hours = st.slider("ชั่วโมงการนอนต่อคืน", 0.0, 14.0, 7.0, 0.5)
 sleep_status = sleep_color(sleep_hours)
@@ -307,23 +392,42 @@ st.write("ความโดดเดี่ยว:", color_label(loneliness_stat
 st.write("การออกกำลังกาย:", color_label(exercise_status))
 st.write("ภาระการเรียน:", color_label(academic_status))
 st.write("ปัญหาครอบครัว:", color_label(family_status))
-st.write("ปัญหาเพศสัมพันธ์:", color_label(sexual_status))
+st.write("ปัญหาเพศสัมพันธ์:", color_label(seual_status) if False else color_label(sexual_status))
 st.write("ปัญหาการเงิน:", color_label(financial_status))
 
 
+# -----------------------------
+# Substance use: trust-first wording
+# -----------------------------
 st.header("5) การใช้สาร")
+st.info(
+    "หัวข้อนี้ใช้เพื่อคัดกรองความเสี่ยงด้านสุขภาพและวางแผนช่วยเหลือเท่านั้น "
+    "ข้อมูลรายบุคคลไม่ส่งให้คณะ อาจารย์ หรือผู้ฝึกสอน และไม่มีผลต่อการเรียนหรือการแข่งขันกีฬา"
+)
 
-smoking = st.checkbox("บุหรี่")
-alcohol = st.checkbox("แอลกอฮอล์")
-cannabis = st.checkbox("กัญชา")
-stimulant = st.checkbox("ยากระตุ้นจิตประสาท")
+substance_prefer_not = st.checkbox("ไม่ประสงค์ตอบหัวข้อนี้")
 
-any_substance = smoking or alcohol or cannabis or stimulant
-substance_status = substance_color(any_substance)
+if substance_prefer_not:
+    smoking = False
+    alcohol = False
+    cannabis = False
+    stimulant = False
+    substance_status = "gray"
+    st.warning("บันทึกว่าไม่ประสงค์ตอบหัวข้อนี้ เจ้าหน้าที่อาจพูดคุยเพิ่มเติมอย่างเป็นส่วนตัวหากจำเป็น")
+else:
+    smoking = st.checkbox("บุหรี่")
+    alcohol = st.checkbox("แอลกอฮอล์")
+    cannabis = st.checkbox("กัญชา")
+    stimulant = st.checkbox("ยากระตุ้นจิตประสาท")
+    any_substance = smoking or alcohol or cannabis or stimulant
+    substance_status = substance_color(any_substance)
 
 st.markdown(f"Substance risk — {color_label(substance_status)}")
 
 
+# -----------------------------
+# Overall status
+# -----------------------------
 overall_red = (
     phq_status == "red"
     or gad_status == "red"
@@ -351,13 +455,26 @@ else:
     overall_status = "green"
 
 
+# -----------------------------
+# Summary and save
+# -----------------------------
 st.header("6) สรุปผลก่อนบันทึก")
+st.caption("ผลนี้เป็นข้อมูลคัดกรองเพื่อให้เจ้าหน้าที่สุขภาพตรวจทาน ไม่ใช่คำวินิจฉัย")
 
 summary = {
     "student_ID": student_id,
     "timestamp_BKK": bkk_now(),
     "station": "MentalHealth",
     "user_type": "student",
+
+    "accessibility_needs_assistance": needs_assistance,
+    "accessibility_large_text": large_text,
+    "accessibility_text_based_communication": communication_text,
+    "accessibility_sign_language": sign_language,
+    "accessibility_upper_limb_difference": upper_limb_difference,
+    "accessibility_mobility_support": mobility_support,
+    "accessibility_other": other_accessibility.strip() if other_accessibility else "",
+    "accessibility_profile": safe_join(accessibility_notes),
 
     "PHQ2": phq2_score,
     "PHQ9": phq9_score if phq9_score is not None else "",
@@ -391,6 +508,7 @@ summary = {
     "financial_problem": financial,
     "financial_status": financial_status,
 
+    "substance_prefer_not_to_answer": substance_prefer_not,
     "smoking": smoking,
     "alcohol": alcohol,
     "cannabis": cannabis,
@@ -403,7 +521,12 @@ summary = {
 st.dataframe(pd.DataFrame([summary]))
 st.markdown(f"## Overall: {color_label(overall_status)}")
 
-final_ok = st.checkbox("ยืนยันส่งแบบประเมิน")
+st.info(
+    "หากผลคัดกรองมีความเสี่ยง เจ้าหน้าที่สุขภาพจะพูดคุยเพิ่มเติมเป็นการส่วนตัวเพื่อยืนยันข้อมูล "
+    "ทำความเข้าใจบริบท และร่วมกันวางแผนดูแล"
+)
+
+final_ok = st.checkbox("ยืนยันส่งแบบคัดกรอง โดยเข้าใจว่าข้อมูลนี้ใช้เพื่อการดูแลสุขภาพ")
 
 if st.button("Save ลง GitHub CSV"):
     if not final_ok:
@@ -412,6 +535,6 @@ if st.button("Save ลง GitHub CSV"):
 
     try:
         append_to_github(summary)
-        st.success("บันทึกแบบประเมินสุขภาพจิตลง GitHub CSV แล้ว")
+        st.success("บันทึกแบบคัดกรองสุขภาพใจลง GitHub CSV แล้ว")
     except Exception as e:
         st.error(f"บันทึก GitHub ไม่สำเร็จ: {e}")
